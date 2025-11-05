@@ -22,7 +22,7 @@ class NoteStore: ObservableObject {
     func saveNotes() {
         do {
             let data = try JSONEncoder().encode(notes)
-            try data.write(to: savePath, options: [.atomic, .completeFileProtection])
+            try data.write(to: savePath, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
         } catch {
             print("Failed to save notes: \(error.localizedDescription)")
         }

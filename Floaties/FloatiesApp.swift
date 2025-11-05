@@ -3,7 +3,6 @@ import SwiftUI
 @main
 struct FloatiesApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
-    @StateObject private var noteStore = NoteStore()
     
     var body: some Scene {
         Settings {

@@ -65,50 +65,69 @@ struct MarkdownView: View {
     }
     
     private func formatInlineMarkdown(_ text: String) -> AttributedString {
-        var attributedString = AttributedString(text)
+        var result = AttributedString(text)
         
-        // Bold: **text**
+        // Process bold first: **text**
+        var searchText = result.description
         let boldPattern = "\\*\\*([^*]+)\\*\\*"
         if let regex = try? NSRegularExpression(pattern: boldPattern) {
-            let nsString = text as NSString
-            let matches = regex.matches(in: text, range: NSRange(location: 0, length: nsString.length))
+            let nsString = searchText as NSString
+            let matches = regex.matches(in: searchText, range: NSRange(location: 0, length: nsString.length))
             
+            // Process matches in reverse order to maintain indices
             for match in matches.reversed() {
-                if let range = Range(match.range, in: text),
-                   let contentRange = Range(match.range(at: 1), in: text) {
-                    let content = String(text[contentRange])
-                    if let attrRange = Range(range, in: attributedString) {
-                        attributedString.replaceSubrange(attrRange, with: AttributedString(content))
-                        if let boldRange = attributedString.range(of: content) {
-                            attributedString[boldRange].font = .system(size: 14, weight: .bold)
-                        }
+                if let matchRange = Range(match.range, in: searchText),
+                   let contentRange = Range(match.range(at: 1), in: searchText) {
+                    let content = String(searchText[contentRange])
+                    
+                    // Calculate the position in AttributedString
+                    if let startIndex = result.characters.index(result.startIndex, offsetBy: match.range.location, limitedBy: result.endIndex),
+                       let endIndex = result.characters.index(result.startIndex, offsetBy: match.range.location + match.range.length, limitedBy: result.endIndex) {
+                        let attrRange = startIndex..<endIndex
+                        
+                        // Replace with bold content
+                        var boldContent = AttributedString(content)
+                        boldContent.font = .system(size: 14, weight: .bold)
+                        result.replaceSubrange(attrRange, with: boldContent)
+                        
+                        // Update searchText for next iteration
+                        searchText = result.description
                     }
                 }
             }
         }
         
-        // Italic: *text* or _text_
+        // Process italic: *text* or _text_ (but not **)
+        searchText = result.description
         let italicPattern = "(?<!\\*)\\*([^*]+)\\*(?!\\*)|_([^_]+)_"
         if let regex = try? NSRegularExpression(pattern: italicPattern) {
-            let nsString = attributedString.description as NSString
-            let matches = regex.matches(in: attributedString.description, range: NSRange(location: 0, length: nsString.length))
+            let nsString = searchText as NSString
+            let matches = regex.matches(in: searchText, range: NSRange(location: 0, length: nsString.length))
             
+            // Process matches in reverse order to maintain indices
             for match in matches.reversed() {
-                let matchRange = match.range
-                if let range = Range(matchRange, in: attributedString.description) {
-                    let matchedText = String(attributedString.description[range])
+                if let matchRange = Range(match.range, in: searchText) {
+                    let matchedText = String(searchText[matchRange])
                     let content = matchedText.trimmingCharacters(in: CharacterSet(charactersIn: "*_"))
-                    if let attrRange = attributedString.range(of: matchedText) {
-                        attributedString.replaceSubrange(attrRange, with: AttributedString(content))
-                        if let italicRange = attributedString.range(of: content) {
-                            attributedString[italicRange].font = .system(size: 14).italic()
-                        }
+                    
+                    // Calculate the position in AttributedString
+                    if let startIndex = result.characters.index(result.startIndex, offsetBy: match.range.location, limitedBy: result.endIndex),
+                       let endIndex = result.characters.index(result.startIndex, offsetBy: match.range.location + match.range.length, limitedBy: result.endIndex) {
+                        let attrRange = startIndex..<endIndex
+                        
+                        // Replace with italic content
+                        var italicContent = AttributedString(content)
+                        italicContent.font = .system(size: 14).italic()
+                        result.replaceSubrange(attrRange, with: italicContent)
+                        
+                        // Update searchText for next iteration
+                        searchText = result.description
                     }
                 }
             }
         }
         
-        return attributedString
+        return result
     }
 }
 
